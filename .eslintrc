@@ -1,0 +1,11 @@
+{
+  "env": {
+    "webextensions": true
+  },
+  "rules": {
+    "import/extensions": [2, {
+      "js": "always"
+    }]
+  },
+  "extends": "airbnb-base"
+}

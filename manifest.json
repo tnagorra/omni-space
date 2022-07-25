@@ -1,0 +1,27 @@
+{
+    "manifest_version": 2,
+    "version": "1.0",
+
+    "name": "__MSG_extensionName__",
+    "description": "__MSG_extensionDescription__",
+
+    "default_locale": "en",
+
+    "icons": {
+        "48": "icons/icon.svg",
+        "96": "icons/icon.svg"
+    },
+
+    "background": {
+        "page": "background.html",
+        "persistent": true
+    },
+    "omnibox": { "keyword": "sp" },
+    "permissions": [
+        "notifications",
+        "storage",
+        "tabs",
+        "tabHide"
+    ]
+}
+

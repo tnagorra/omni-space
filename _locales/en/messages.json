@@ -1,0 +1,10 @@
+{
+    "extensionName": {
+        "message": "Omni-space",
+        "description": "Name of the extension."
+    },
+    "extensionDescription": {
+        "message": "Switch between spaces.",
+        "description": "Description of the add-on."
+    }
+}
