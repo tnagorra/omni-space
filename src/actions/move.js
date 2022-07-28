@@ -80,14 +80,10 @@ export default {
     });
     const currentTab = currentTabs[0];
 
-    console.warn(getTabs());
-
     await setTabs((oldTabs) => ({
       ...oldTabs,
       [currentTab.id]: spaceToMove,
     }));
-
-    console.warn(getTabs());
 
     await updateTabsVisibilty(getTabs(), getCurrentSpace());
   },

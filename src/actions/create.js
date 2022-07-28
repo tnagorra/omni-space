@@ -55,6 +55,6 @@ export default {
       await notify('Cannot add space that already exists');
       return;
     }
-    await setSpaces((oldSpaces) => [...oldSpaces, spaceToAdd]);
+    await setSpaces((oldSpaces) => ([...oldSpaces, spaceToAdd]));
   },
 };

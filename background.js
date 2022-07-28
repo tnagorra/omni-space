@@ -12,6 +12,7 @@ import {
 } from './src/actions/index.js';
 import {
   SUGGESTION_INFO,
+  notify,
 } from './src/utils.js';
 import {
   updateTabsVisibilty,
@@ -30,24 +31,24 @@ browser.omnibox.onInputChanged.addListener(async (text, addSuggestions) => {
       .map((actionName) => ({ actionName, action: actionItems[actionName] }))
       .map((item) => ({
         content: `${item.actionName}\n`,
-        description: item.action.name,
+        description: `${SUGGESTION_INFO} ${item.action.name}`,
       }));
     await addSuggestions(suggestions);
-  } else {
-    // Get suggestion for an action depending on the tokens
-    const suggestions = actionItem.getSuggestions({
-      tokens,
-      action,
-      text,
-    });
-    await addSuggestions(suggestions.map((suggestion) => ({
-      // NOTE: Adding a new line so that the suggestion content and text on
-      // omnibar will not match
-      // If they match, the suggestion is hidden
-      content: `${suggestion.content}\n`,
-      description: `${suggestion.type || SUGGESTION_INFO} ${suggestion.description}`,
-    })));
+    return;
   }
+  // Get suggestion for an action depending on the tokens
+  const suggestions = actionItem.getSuggestions({
+    tokens,
+    action,
+    text,
+  });
+  await addSuggestions(suggestions.map((suggestion) => ({
+    // NOTE: Adding a new line so that the suggestion content and text on
+    // omnibar will not match
+    // If they match, the suggestion is hidden
+    content: `${suggestion.content}\n`,
+    description: `${suggestion.type || SUGGESTION_INFO} ${suggestion.description}`,
+  })));
 });
 
 browser.omnibox.onInputEntered.addListener(async (text) => {
@@ -55,10 +56,7 @@ browser.omnibox.onInputEntered.addListener(async (text) => {
   const [action, ...tokens] = text.trim().split(/\s+/);
   const actionItem = actionItems[action];
   if (!actionItem) {
-    await browser.notifications.create(undefined, {
-      title: 'Error',
-      message: `No action specified: ${text}`,
-    });
+    await notify(`No action specified: ${text}`);
     return;
   }
   await actionItem.handler(tokens);
@@ -71,7 +69,10 @@ browser.tabs.onCreated.addListener(async (tab) => {
   }));
 });
 
-browser.tabs.onRemoved.addListener(async (tabId) => {
+browser.tabs.onRemoved.addListener(async (tabId, removeInfo) => {
+  if (removeInfo.isWindowClosing) {
+    return;
+  }
   await setTabs((oldTabs) => {
     const newTabs = {
       ...oldTabs,

@@ -69,12 +69,12 @@ export default {
   handler: async (tokens) => {
     const spaceToJump = tokens[0];
     if (!spaceToJump) {
-      notify('Cannot jump to space with no name');
+      await notify('Cannot jump to space with no name');
       return;
     }
     const index = getSpaces().findIndex((space) => space === spaceToJump);
     if (index === -1) {
-      notify('Cannot jump to space that does not exist');
+      await notify('Cannot jump to space that does not exist');
       return;
     }
     await setCurrentSpace(spaceToJump);

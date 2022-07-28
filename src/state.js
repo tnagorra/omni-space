@@ -1,28 +1,70 @@
-import { DEFAULT_SPACE_NAME } from './utils.js';
+import { DEFAULT_SPACE_NAME, diffObject } from './utils.js';
 
-export const tabMemory = {
+const SESSION_SPACE_KEY = 'space';
+
+const STORAGE_CURRENT_SPACE_KEY = 'currentSpace';
+const STORAGE_SPACES_KEY = 'spaces';
+
+const tabMemory = {
   currentSpace: DEFAULT_SPACE_NAME,
   spaces: [DEFAULT_SPACE_NAME],
+
+  // NOTE: we cannot store tabs on storage.local as tabId changes when new
+  // browser is restarted
+  // We are using sessions to store space on each tab and getting new tabIds on
+  // each load
   tabs: {},
 };
 
 export async function setCurrentSpace(val) {
-  tabMemory.currentSpace = typeof val === 'function'
-    ? val(tabMemory.currentSpace)
+  const prevCurrentSpace = tabMemory.currentSpace;
+
+  const nextCurrentSpace = typeof val === 'function'
+    ? val(prevCurrentSpace)
     : val;
-  return browser.storage.local.set({ currentSpace: tabMemory.currentSpace });
+
+  tabMemory.currentSpace = nextCurrentSpace;
+  await browser.storage.local.set({ [STORAGE_CURRENT_SPACE_KEY]: nextCurrentSpace });
 }
 export async function setSpaces(val) {
-  tabMemory.spaces = typeof val === 'function'
-    ? val(tabMemory.spaces)
+  const prevSpaces = tabMemory.spaces;
+
+  const nextSpaces = typeof val === 'function'
+    ? val(prevSpaces)
     : val;
-  return browser.storage.local.set({ spaces: tabMemory.spaces });
+
+  tabMemory.spaces = nextSpaces;
+  await browser.storage.local.set({ [STORAGE_SPACES_KEY]: nextSpaces });
 }
 export async function setTabs(val) {
-  tabMemory.tabs = typeof val === 'function'
-    ? val(tabMemory.tabs)
+  const prevTabs = tabMemory.tabs;
+  const nextTabs = typeof val === 'function'
+    ? val(prevTabs)
     : val;
-  return browser.storage.local.set({ tabs: tabMemory.tabs });
+
+  const {
+    added,
+    deleted,
+    modified,
+  } = diffObject(prevTabs, nextTabs);
+
+  tabMemory.tabs = nextTabs;
+  await Promise.all([
+    ...added.map((addedKey) => browser.sessions.setTabValue(
+      +addedKey,
+      SESSION_SPACE_KEY,
+      nextTabs[addedKey],
+    )),
+    ...modified.map((modifiedKey) => browser.sessions.setTabValue(
+      +modifiedKey,
+      SESSION_SPACE_KEY,
+      nextTabs[modifiedKey],
+    )),
+    ...deleted.map((addedKey) => browser.sessions.removeTabValue(
+      +addedKey,
+      SESSION_SPACE_KEY,
+    )),
+  ]);
 }
 
 export function getCurrentSpace() {
@@ -38,23 +80,42 @@ export function getTabs() {
 }
 
 export async function initializeState(queriedTabs) {
-  const {
-    spaces,
-    currentSpace,
-    tabs,
-  } = await browser.storage.local.get({
-    currentSpace: DEFAULT_SPACE_NAME,
-    spaces: [DEFAULT_SPACE_NAME],
-    tabs: {},
-  });
+  const storage = await browser.storage.local.get([
+    STORAGE_CURRENT_SPACE_KEY,
+    STORAGE_SPACES_KEY,
+  ]);
 
-  tabMemory.spaces = spaces;
-  tabMemory.currentSpace = currentSpace;
-  tabMemory.tabs = queriedTabs.reduce(
-    (acc, tab) => ({
-      ...acc,
-      [tab.id]: tabs[tab.id] || tabMemory.currentSpace,
+  const tabSpaces = await Promise.all(
+    queriedTabs.map(async (tab) => {
+      const space = await browser.sessions.getTabValue(
+        tab.id,
+        SESSION_SPACE_KEY,
+      );
+      return {
+        tabId: tab.id,
+        space,
+      };
     }),
+  );
+
+  const prevSpaces = storage[STORAGE_SPACES_KEY] || [DEFAULT_SPACE_NAME];
+  tabMemory.spaces = prevSpaces;
+
+  const prevCurrentSpace = storage[STORAGE_CURRENT_SPACE_KEY] || DEFAULT_SPACE_NAME;
+  tabMemory.currentSpace = prevCurrentSpace;
+
+  const prevTabs = tabSpaces.reduce(
+    (acc, tabSpace) => {
+      let space = tabSpace.space || prevCurrentSpace;
+      if (!prevSpaces.includes(space)) {
+        space = DEFAULT_SPACE_NAME;
+      }
+      return {
+        ...acc,
+        [tabSpace.tabId]: space,
+      };
+    },
     {},
   );
+  tabMemory.tabs = prevTabs;
 }

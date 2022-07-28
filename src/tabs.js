@@ -3,6 +3,7 @@
 // - Tabs that are sharing the screen, microphone or camera cannot be hidden.
 // - The current active tab cannot be hidden.
 // - Tabs that are in the process of being closed cannot be hidden.
+
 // eslint-disable-next-line import/prefer-default-export
 export async function updateTabsVisibilty(tabs, currentSpace) {
   const queriedTabs = await browser.tabs.query({});
@@ -25,5 +26,6 @@ export async function updateTabsVisibilty(tabs, currentSpace) {
 
   const hiddenTabs = queriedTabs
     .filter((tab) => tabs[tab.id] !== currentSpace);
+
   await browser.tabs.hide(hiddenTabs.map((tab) => tab.id));
 }

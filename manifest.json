@@ -12,6 +12,11 @@
         "96": "icons/icon.svg"
     },
 
+    "browser_specific_settings": {
+        "gecko": {
+            "id": "omni-space@togglecorp.com"
+        }
+    },
     "background": {
         "page": "background.html",
         "persistent": true
@@ -19,6 +24,7 @@
     "omnibox": { "keyword": "sp" },
     "permissions": [
         "notifications",
+        "sessions",
         "storage",
         "tabs",
         "tabHide"

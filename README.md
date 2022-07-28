@@ -4,14 +4,9 @@ Switch between spaces.
 
 ## TODO
 
+- Support multiple windows
 - Add i18n strings
-- Configure addon
-- Add icons
-- Package
-
 - Use default message to show info
-- Use notification to show error
-
-- Enable disable spaces
 - Delete space
-- Merge space
+- Merge two spaces
+- Enable disable spaces
